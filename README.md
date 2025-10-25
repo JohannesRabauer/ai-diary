@@ -1,0 +1,1 @@
+https://code.quarkus.io/?g=dev.rabauer.ai.diary&a=backend&nc=true&e=io.quarkiverse.langchain4j%3Aquarkus-langchain4j-ollama&e=smallrye-openapi&e=rest&e=io.quarkiverse.langchain4j%3Aquarkus-langchain4j-pgvector&e=io.quarkiverse.langchain4j%3Aquarkus-langchain4j-easy-rag
