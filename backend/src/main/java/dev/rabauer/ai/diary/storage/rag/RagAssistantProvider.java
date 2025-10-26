@@ -1,6 +1,7 @@
 package dev.rabauer.ai.diary.storage.rag;
 
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.rabauer.ai.diary.RagAssistant;
@@ -16,14 +17,20 @@ public class RagAssistantProvider {
 
     @Inject
     ChatModel chatModel;
+    @Inject
+    EmbeddingModel embeddingModel;
 
     public RagAssistant createAssistant() {
+        var contentRetriever = EmbeddingStoreContentRetriever.builder()
+                .embeddingModel(embeddingModel)
+                .embeddingStore(embeddingStore)
+                .maxResults(3)
+                .build();
+
         return AiServices
                 .builder(RagAssistant.class)
                 .chatModel(chatModel)
-                .contentRetriever(
-                        EmbeddingStoreContentRetriever.from(embeddingStore)
-                )
+                .contentRetriever(contentRetriever)
                 .build();
     }
 }
