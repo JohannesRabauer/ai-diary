@@ -1,4 +1,4 @@
-package dev.rabauer.ai.diary;
+package dev.rabauer.ai.diary.dto;
 
 import java.time.LocalDateTime;
 
