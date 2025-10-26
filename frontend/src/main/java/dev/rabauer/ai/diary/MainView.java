@@ -6,10 +6,15 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.annotation.SpringComponent;
 import dev.rabauer.ai.diary.dto.NewEntry;
 import dev.rabauer.ai.diary.dto.ProcessedEntry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
@@ -19,10 +24,11 @@ import java.time.format.DateTimeFormatter;
 @Route("")
 public class MainView extends VerticalLayout {
 
-    @Value("${backend.url}")
     private String backendUrl;
 
-    public MainView() {
+    @Autowired
+    public MainView(Environment env) {
+        this.backendUrl = env.getProperty("backend.url");
         setSizeFull();
         UI currentUi = UI.getCurrent();
 

@@ -2,6 +2,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    ports:
       - "11434:11434"
     volumes:
       - ./ollama/data:/root/.ollama
@@ -25,9 +26,9 @@ services:
     ports:
       - 15432:5432
     environment:
-      - POSTGRES_USER=quanta
+      - POSTGRES_USER=ai-diary
       - POSTGRES_PASSWORD=not-secure
-      - POSTGRES_DB=quanta
+      - POSTGRES_DB=ai-diary
       - POSTGRES_HOST_AUTH_METHOD=trust
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
@@ -41,6 +42,8 @@ services:
     depends_on:
       - ollama
     environment:
+      - QUARKUS_DATASOURCE_USERNAME=ai-diary
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:15432/ai-diary
       - OLLAMA_HOST=http://ollama:11434
       - QUARKUS_LANGCHAIN4J_OLLAMA_BASE-URL=http://ollama:11434
     ports:

@@ -10,9 +10,11 @@ done
 echo "Ollama is ready"
 
 echo "Pulling the models..."
+ollama pull qwen3-embedding:0.6b
 ollama pull llama3.2:1b
 
 echo "Starting the models..."
+ollama run qwen3-embedding:0.6b
 ollama run llama3.2:1b
 
 # Wait indefinitely so the container stays alive

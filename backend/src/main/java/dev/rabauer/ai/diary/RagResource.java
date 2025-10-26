@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@Path("/rag")
+@Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class RagResource {
@@ -30,6 +30,8 @@ public class RagResource {
 
     @POST
     @Path("/newEntry")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
     public Multi<String> addNewEntry(NewEntry newEntry) {
         RagAssistant assistant = provider.createAssistant();
         Multi<String> aiResponse = assistant.analyzeDiary(
@@ -59,6 +61,7 @@ public class RagResource {
 
     @GET
     @Path("/entries")
+    @Produces(MediaType.APPLICATION_JSON)
     public List<ProcessedEntry> ask(
             @QueryParam("amount") int amount,
             @QueryParam("offset") int offset
