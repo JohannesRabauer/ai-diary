@@ -1,12 +1,9 @@
-package dev.rabauer.ai.diary.storage;
+package dev.rabauer.ai.diary.rag;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.*;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
-import dev.rabauer.ai.diary.storage.entities.DiaryEntryEntity;
-import dev.rabauer.ai.diary.storage.entities.DiaryEntryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -21,14 +18,19 @@ import static dev.langchain4j.data.document.splitter.DocumentSplitters.recursive
 @ApplicationScoped
 public class RagIngestService {
 
-    @Inject
-    EmbeddingModel embeddingModel;
+    private final EmbeddingModel embeddingModel;
+    private final PgVectorEmbeddingStore embeddingStore;
+    private final DiaryEntryRepository repository;
 
-    @Inject
-    PgVectorEmbeddingStore embeddingStore;
-
-    @Inject
-    DiaryEntryRepository repository;
+    public RagIngestService(
+            EmbeddingModel embeddingModel,
+            PgVectorEmbeddingStore embeddingStore,
+            DiaryEntryRepository repository
+    ) {
+        this.embeddingModel = embeddingModel;
+        this.embeddingStore = embeddingStore;
+        this.repository = repository;
+    }
 
     @Transactional
     public void embedAndStoreNewEntry(DiaryEntryEntity newEntity)

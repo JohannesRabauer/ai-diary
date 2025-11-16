@@ -1,4 +1,4 @@
-package dev.rabauer.ai.diary.storage.entities;
+package dev.rabauer.ai.diary.rag;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;

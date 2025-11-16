@@ -7,7 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @RegisterAiService
 @ApplicationScoped
-public interface RagAssistant {
+public interface DiaryAiAssistant {
     @SystemMessage("""
         You are an empathetic and insightful personal growth coach.
         The user keeps a daily diary. Your task is to analyze today's entry
