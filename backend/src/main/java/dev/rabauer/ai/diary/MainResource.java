@@ -5,6 +5,7 @@ import dev.rabauer.ai.diary.dto.ProcessedEntry;
 import dev.rabauer.ai.diary.rag.RagIngestService;
 import dev.rabauer.ai.diary.rag.DiaryEntryEntity;
 import dev.rabauer.ai.diary.rag.DiaryEntryRepository;
+import io.quarkus.panache.common.Page;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -69,8 +70,9 @@ public class MainResource {
             @QueryParam("amount") int amount,
             @QueryParam("offset") int offset
     ) {
-        //TODO: Apply fiilter
-        return diaryEntryRepository.findAll()
+        return diaryEntryRepository
+                .findAll()
+                .page(Page.of(offset, amount))
                 .stream().map(
                         entry -> new ProcessedEntry(
                                 entry.timestamp,
