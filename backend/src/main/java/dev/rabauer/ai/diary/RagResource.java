@@ -7,6 +7,7 @@ import dev.rabauer.ai.diary.storage.entities.DiaryEntryEntity;
 import dev.rabauer.ai.diary.storage.entities.DiaryEntryRepository;
 import dev.rabauer.ai.diary.storage.rag.RagAssistantProvider;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import jakarta.inject.Inject;
@@ -43,9 +44,11 @@ public class RagResource {
         );
 
         final StringBuilder completeResult = new StringBuilder();
-        aiResponse.onItem().invoke(completeResult::append);
 
-        aiResponse.onCompletion().invoke(
+        return aiResponse
+                .onItem().invoke(completeResult::append)
+                .emitOn(Infrastructure.getDefaultWorkerPool())
+                .onCompletion().invoke(
                 () ->
                         ingestor.embedAndStoreNewEntry(
                                 new DiaryEntryEntity(
@@ -55,8 +58,6 @@ public class RagResource {
                                 )
                         )
         );
-
-        return aiResponse;
     }
 
     @GET

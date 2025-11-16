@@ -6,15 +6,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.spring.annotation.SpringComponent;
 import dev.rabauer.ai.diary.dto.NewEntry;
 import dev.rabauer.ai.diary.dto.ProcessedEntry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
@@ -24,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 @Route("")
 public class MainView extends VerticalLayout {
 
-    private String backendUrl;
+    private final String backendUrl;
 
     @Autowired
     public MainView(Environment env) {
@@ -52,31 +48,11 @@ public class MainView extends VerticalLayout {
         this.add(new HorizontalLayout(inputArea, saveButton));
 
         this.getEntries(10, 0)
-                .subscribe(entry -> this.add(new UiEntry(entry).container())
+                .subscribe(
+                        entry -> currentUi.access(
+                                () -> this.add(new UiEntry(entry).container())
+                        )
                 );
-    }
-
-    public record UiEntry(
-            TextArea entryText,
-            TextArea entryAiText,
-            HorizontalLayout container
-    ) {
-        public UiEntry(LocalDateTime entryTime) {
-            this(
-                    new TextArea("Entry - " + DateTimeFormatter.ofPattern("dd.MM.yyyy-hh:mm").format(entryTime)),
-                    new TextArea("Ai Remarks"),
-                    new HorizontalLayout()
-            );
-            this.entryAiText.setReadOnly(true);
-            this.entryText.setReadOnly(true);
-            this.container.add(this.entryText, this.entryAiText());
-        }
-
-        public UiEntry(ProcessedEntry entry) {
-            this(entry.entryTimestamp());
-            this.entryText().setValue(entry.entryText());
-            this.entryAiText.setValue(entry.entryAiText());
-        }
     }
 
     private WebClient buildRestClient() {
@@ -109,5 +85,28 @@ public class MainView extends VerticalLayout {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToFlux(ProcessedEntry.class);
+    }
+
+    public record UiEntry(
+            TextArea entryText,
+            TextArea entryAiText,
+            HorizontalLayout container
+    ) {
+        public UiEntry(LocalDateTime entryTime) {
+            this(
+                    new TextArea("Entry - " + DateTimeFormatter.ofPattern("dd.MM.yyyy-hh:mm").format(entryTime)),
+                    new TextArea("Ai Remarks"),
+                    new HorizontalLayout()
+            );
+            this.entryAiText.setReadOnly(true);
+            this.entryText.setReadOnly(true);
+            this.container.add(this.entryText, this.entryAiText());
+        }
+
+        public UiEntry(ProcessedEntry entry) {
+            this(entry.entryTimestamp());
+            this.entryText().setValue(entry.entryText());
+            this.entryAiText.setValue(entry.entryAiText());
+        }
     }
 }
