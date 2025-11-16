@@ -24,20 +24,17 @@ public class DiaryAiAssistantProvider {
     private final ChatModel chatModel;
     private final EmbeddingModel embeddingModel;
     private final JpaChatMemoryProvider memoryProvider;
-    private final ChatMessageRepository repository;
 
     public DiaryAiAssistantProvider(
             PgVectorEmbeddingStore embeddingStore,
             ChatModel chatModel,
             EmbeddingModel embeddingModel,
-            JpaChatMemoryProvider memoryProvider,
-            ChatMessageRepository repository
+            JpaChatMemoryProvider memoryProvider
     ) {
         this.embeddingStore = embeddingStore;
         this.chatModel = chatModel;
         this.embeddingModel = embeddingModel;
         this.memoryProvider = memoryProvider;
-        this.repository = repository;
     }
 
     public DiaryAiAssistant createAssistant() {

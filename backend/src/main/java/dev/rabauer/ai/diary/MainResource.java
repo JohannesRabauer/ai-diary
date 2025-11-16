@@ -11,7 +11,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
-import jakarta.inject.Inject;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,7 +24,11 @@ public class MainResource {
     private final DiaryAiAssistantProvider provider;
     private final DiaryEntryRepository diaryEntryRepository;
 
-    public MainResource(RagIngestService ingestor, DiaryAiAssistantProvider provider, DiaryEntryRepository diaryEntryRepository) {
+    public MainResource(
+            RagIngestService ingestor,
+            DiaryAiAssistantProvider provider,
+            DiaryEntryRepository diaryEntryRepository
+    ) {
         this.ingestor = ingestor;
         this.provider = provider;
         this.diaryEntryRepository = diaryEntryRepository;
