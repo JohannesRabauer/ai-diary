@@ -29,29 +29,35 @@ public class MainView extends VerticalLayout {
         UI currentUi = UI.getCurrent();
 
         TextArea inputArea = new TextArea("New entry");
+        inputArea.setWidthFull();
 
-        Button saveButton = new Button("Save", e -> {
-            String input = inputArea.getValue();
-            LocalDateTime now = LocalDateTime.now();
+        Button saveButton = new Button("Save", e -> saveNewEntry(inputArea, currentUi));
 
-            inputArea.clear();
-            UiEntry newUiEntry = new UiEntry(now);
-            newUiEntry.entryText.setValue(input);
-            this.addComponentAtIndex(1, newUiEntry.container);
-
-            storeNewEntry(input, now)
-                    .subscribe(
-                            token -> currentUi.access(() -> newUiEntry.entryAiText().setValue(newUiEntry.entryAiText().getValue() + token))
-                    );
-        });
-
-        this.add(new HorizontalLayout(inputArea, saveButton));
+        HorizontalLayout horizontalLayout = new HorizontalLayout(inputArea, saveButton);
+        horizontalLayout.setWidthFull();
+        horizontalLayout.setAlignItems(Alignment.BASELINE);
+        this.add(horizontalLayout);
 
         this.getEntries(10, 0)
                 .subscribe(
                         entry -> currentUi.access(
                                 () -> this.add(new UiEntry(entry).container())
                         )
+                );
+    }
+
+    private void saveNewEntry(TextArea inputArea, UI currentUi) {
+        String input = inputArea.getValue();
+        LocalDateTime now = LocalDateTime.now();
+
+        inputArea.clear();
+        UiEntry newUiEntry = new UiEntry(now);
+        newUiEntry.entryText.setValue(input);
+        this.addComponentAtIndex(1, newUiEntry.container);
+
+        storeNewEntry(input, now)
+                .subscribe(
+                        token -> currentUi.access(() -> newUiEntry.entryAiText().setValue(newUiEntry.entryAiText().getValue() + token))
                 );
     }
 
@@ -99,8 +105,11 @@ public class MainView extends VerticalLayout {
                     new HorizontalLayout()
             );
             this.entryAiText.setReadOnly(true);
+            this.entryAiText.setWidthFull();
             this.entryText.setReadOnly(true);
+            this.entryText.setWidthFull();
             this.container.add(this.entryText, this.entryAiText());
+            this.container.setWidthFull();
         }
 
         public UiEntry(ProcessedEntry entry) {
