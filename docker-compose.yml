@@ -31,6 +31,11 @@ services:
       - POSTGRES_DB=ai-diary
       - POSTGRES_HOST_AUTH_METHOD=trust
       - PGDATA=/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai-diary -d ai-diary"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     volumes:
       - ./db/data/:/var/lib/postgresql/data/
       - ./db/init:/docker-entrypoint-initdb.d
@@ -41,9 +46,10 @@ services:
     container_name: backend
     depends_on:
       - ollama
+      - db
     environment:
       - QUARKUS_DATASOURCE_USERNAME=ai-diary
-      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:15432/ai-diary
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/ai-diary
       - OLLAMA_HOST=http://ollama:11434
       - QUARKUS_LANGCHAIN4J_OLLAMA_BASE-URL=http://ollama:11434
     ports:
