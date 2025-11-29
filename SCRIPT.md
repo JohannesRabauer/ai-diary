@@ -1,22 +1,236 @@
-# AI Diary: A Modern Stoic Practice
-## YouTube Video Script (30 minutes)
+# AI Diary: Practical Walkthrough (≈20min)
+## YouTube Video Script — Readable, human, senior-engineer tone
 
 ---
 
-## PART 1: INTRODUCTION (1.5 minutes)
+## PART 1 — INTRO (≈2:00)
 
-### Opening Hook
+Voice: calm, conversational, a little wry. This is you talking to peers—no hype, no marketing. Slow pace. Pause after each paragraph.
 
-"We're going to build an AI Diary in Java—a system that combines journaling with AI-powered insights. The twist? It runs entirely on your machine, uses vector embeddings for semantic search, and integrates everything from Llama 3.2 to PostgreSQL.
+Opening lines (natural):
 
-In the next 20 minutes, we'll walk through a real, production-ready architecture using:
-- **Java 21 & Quarkus** for the backend
-- **Vaadin & Spring Boot** for the frontend  
-- **PostgreSQL + pgvector** for vector storage
-- **Ollama & Llama 3.2** for local LLM inference
-- **LangChain4j** for seamless AI integration
+"Hey—I recently got back into Stoicism and started journaling again. Not grand Meditations-level, just everyday notes where I try to catch myself: the thoughts, the reactions, the dumb things I did.
 
-Then we'll deep dive into the technical implementation—specifically how vectors, embeddings, and RAG patterns work together."
+That led me to this project: an AI-first journal that runs locally, stores semantic memory as vectors and helps you spot patterns in your own life. Today I'll show you how it works end-to-end: the containers, the backend, the vector magic, and a running demo. No hand-wavy buzzwords—just code, diagrams, and a little philosophy for seasoning.
+
+What I want you to walk away with: how to build a private, scalable, pragmatic AI diary—one you can run on your laptop or server.
+
+Quick rundown of tech we’ll use (say fast, then pause): Java 21 + Quarkus, Vaadin on the front, PostgreSQL + pgvector, Ollama running Llama 3.2 locally, and LangChain4j wiring it together. Alright—let's get practical."
+
+---
+
+## PART 2 — SYSTEM ARCHITECTURE (≈3:00)
+
+Say this while showing `docker-compose.yml` behind you. Point to lines as you mention ports and services.
+
+Short summary: four containers, each a single responsibility.
+
+Mermaid: high-level service diagram
+
+```mermaid
+flowchart TD
+  FE[Frontend\nVaadin:8081]
+  BE[Backend\nQuarkus:8080]
+  DB[Postgres + pgvector\n15432]
+  OL[Ollama (Llama 3.2)\n11434]
+  FE --> BE
+  BE --> DB
+  BE --> OL
+```
+
+Describe the compose file (speak to these bullets, keep it concrete):
+- Ollama: serves the LLM on port 11434. We run it locally for privacy and latency. If you have a GPU, we attach it; otherwise CPU mode works (slower).
+- PostgreSQL + pgvector: stores entries and vectors. We use a `vector(1024)` column and HNSW indexes for nearest-neighbor search.
+- Quarkus backend: REST API, LangChain4j integrations, and the ingestion pipeline.
+- Vaadin frontend: pure Java UI; streams AI responses to the user.
+
+Tip for live demo: point to the compose env variables—`OLLAMA_KEEP_ALIVE=-1` (keep model warm), and the DB port mapping. That’s it for infra. Now to the meat: vectors.
+
+---
+
+## PART 3 — VECTORS & RAG (≈10:00)
+
+This is the core. Slow, clear, with small jokes: e.g., "Vectors are boring arrays that get you powerful results—think of them as the spreadsheet for meaning."
+
+Start simple: what is an embedding?
+
+"When you write a sentence, the embedding model turns it into a float array — here 1024 floats. That's your idea, in numbers. Similar ideas = similar vectors. That's it."
+
+Small concrete example (readable):
+
+Text: "I’m nervous about tomorrow" → Embedding: [-0.01, 0.34, -0.9, ...] (1024 floats).
+
+Explain similarity: cosine similarity. Keep it short:
+- Cosine measures angle between vectors. 1 = same direction, 0 = orthogonal, -1 = opposite.
+
+Database storage (explicit): show snippet and explain aloud.
+
+```sql
+ALTER TABLE documents ADD COLUMN embedding vector(1024);
+CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
+```
+
+Speak to HNSW and performance (short):
+- HNSW organizes vectors into a graph for fast nearest-neighbor search—practically logarithmic lookups for big datasets.
+
+RAG pattern (Retrieval-Augmented Generation): explain step-by-step in plain language:
+
+1) New entry arrives.
+2) We ask the LLM for an analysis (mood, key scenario, short advice). It streams back a response.
+3) Simultaneously we embed the text and store the embedding in PostgreSQL.
+4) Next time, before generating a response, the backend retrieves top-N similar chunks and provides them as context to the LLM.
+
+Mermaid: RAG flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant OL as Ollama
+  participant DB as Postgres
+
+  U->>FE: submit entry
+  FE->>BE: POST /newEntry
+  BE->>OL: analyzeDiary (stream)
+  BE->>FE: stream tokens
+  BE->>DB: embed + store
+  Note over BE,DB: later: retrieve top-k for context
+```
+
+Language bindings: LangChain4j and Quarkus
+
+Explain how LangChain4j simplifies wiring in Java:
+- `@RegisterAiService` creates an LLM client bound to Ollama using Quarkus config.
+- `Multi<String>` from Mutiny streams tokens to the client.
+
+Show the `RagAssistant` interface briefly (read aloud, then point to it on screen):
+
+```java
+@RegisterAiService
+@ApplicationScoped
+public interface RagAssistant {
+    @SystemMessage("""
+      You are an empathetic coach. Provide: Mood, Key Scenario, Insight, Actionable Advice.
+    """)
+    Multi<String> analyzeDiary(@UserMessage String todaysEntry);
+}
+```
+
+Explain streaming: front receives tokens while LLM is still composing. That’s better UX than waiting a long time.
+
+Document splitting and chunking (important, slow):
+- We use a recursive splitter with 500-token chunks. Long entries become multiple vectors so later retrieval can match exact paragraphs.
+- Example: 2000-token entry → 4 chunks; each chunk gets its own embedding + metadata.
+
+Explain the ingestion flow (concise):
+- Persist raw entry
+- Build an EmbeddingStoreIngestor with pgvector store and embedding model
+- Ingest Document.from(text, metadata)
+
+Show and read the key bits of `RagIngestService` code slowly (point to on screen):
+
+```java
+public void embedAndStoreNewEntry(DiaryEntryEntity newEntity) {
+    repository.persist(newEntity);
+    EmbeddingStoreIngestor ingestor = EmbeddingStoreIngestor.builder()
+        .embeddingStore(embeddingStore)
+        .embeddingModel(embeddingModel)
+        .documentSplitter(recursive(500,0))
+        .build();
+    ingestor.ingest(Document.from(newEntity.entryText, Metadata.from(...)));
+}
+```
+
+Wrap up this section by summarizing RAG value:
+- You get context without fine-tuning. The model uses your past entries as memory. It’s private, incrementally growing, and interpretable.
+
+---
+
+## PART 4 — WORKFLOW & RUNNING EXAMPLE (≈4:00)
+
+This is the live-demo script you’ll read while you run the app. Keep it natural—pause before showing the UI.
+
+Pre-demo: show terminal with `docker compose up --build` running (explain stages briefly):
+
+Say aloud while pointing at the compose output:
+- Postgres initializes and loads pgvector
+- Ollama starts and loads the model (takes time if large model)
+- Backend starts and registers the LLM service
+- Frontend starts on 8081
+
+Now the user interaction (walkthrough):
+
+1. Open `localhost:8081`. Show the input box.
+2. Type: "Had a tense convo with my manager, felt defensive."
+3. Hit submit.
+
+While the UI streams back tokens, narrate: "See how the response appears? That's Mutiny streaming `Multi<String>` in action. The backend is generating analysis and at the same time preparing the embedding for storage."
+
+After response completes, show the DB entry (psql snippet) and point to the `embedding` column (explain it’s a vector, not human-readable):
+
+```sql
+SELECT id, substring(entry_text,1,80) AS preview, ai_content FROM documents ORDER BY id DESC LIMIT 5;
+```
+
+Then show a second example—submit: "I feel anxious about the review tomorrow"—and point out how the backend pulls similar past chunks and references them in the LLM prompt.
+
+For devs: show the `RagResource` orchestration method (read slowly):
+
+```java
+@POST @Path("/newEntry")
+public Multi<String> addNewEntry(NewEntry newEntry) {
+    RagAssistant assistant = provider.createAssistant();
+    Multi<String> aiResponse = assistant.analyzeDiary(...);
+    StringBuilder completeResult = new StringBuilder();
+    aiResponse.onItem().invoke(completeResult::append);
+    aiResponse.onCompletion().invoke(() -> ingestor.embedAndStoreNewEntry(...));
+    return aiResponse;
+}
+```
+
+Notes while demoing:
+- The streaming response feels like a conversation
+- The DB write is asynchronous and doesn't block the UI
+- Retrieval uses `ORDER BY embedding <=> query LIMIT k` or LangChain4j helpers
+
+---
+
+## PART 5 — CLOSING + HANDY DETAILS (≈1:00)
+
+Finish with a quick checklist and a small stoic line for mood:
+
+Checklist to ship this yourself:
+- Docker + Compose
+- ~8GB RAM (model dependent)
+- GPU optional
+- Clone repo, `docker compose up --build`, open `localhost:8081`
+
+Small stoic sign-off (casual):
+"Technology won't make you virtuous—journaling might. This tool just helps you see your patterns faster. Ship it, try it, and maybe be a little less embarrassed by your past self."
+
+---
+
+## TECHNICAL REFERENCE (append as quick appendix behind the main script)
+
+- API endpoints: `POST /newEntry`, `GET /entries`
+- DB schema: `documents(id, entry_text TEXT, timestamp TIMESTAMP, ai_content TEXT, embedding vector(1024))`
+- Key config:
+
+```properties
+quarkus.datasource.jdbc.url=jdbc:postgresql://db:15432/ai-diary
+quarkus.langchain4j.ollama.base-url=http://ollama:11434
+```
+
+---
+
+## TIMINGS & DELIVERY NOTES
+
+- Total spoken: ~20 minutes
+- Read slowly. Use pauses for diagrams and code highlights.
+- Use the demo as the momentum: code => UI => DB => back to explanation.
+
+Good. I saved the file so you can read it on-camera with the app running in the greenscreen background. If you want, I can trim it further, or produce a short teleprompter-friendly version with only lines to read and cues for actions.
 
 ---
 
