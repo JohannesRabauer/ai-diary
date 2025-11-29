@@ -29,10 +29,10 @@ Mermaid: high-level service diagram
 
 ```mermaid
 flowchart TD
-  FE[Frontend\nVaadin:8081]
-  BE[Backend\nQuarkus:8080]
-  DB[Postgres + pgvector\n15432]
-  OL[Ollama (Llama 3.2)\n11434]
+  FE[Frontend: Vaadin 8081]
+  BE[Backend: Quarkus 8080]
+  DB[Postgres_pgvector: 15432]
+  OL[Ollama_Llama3_2: 11434]
   FE --> BE
   BE --> DB
   BE --> OL
