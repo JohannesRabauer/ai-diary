@@ -15,7 +15,7 @@
     <description>Basic frontend for a diary</description>
     <properties>
         <java.version>25</java.version>
-        <vaadin.version>24.9.5</vaadin.version>
+        <vaadin.version>25.0.4</vaadin.version>
     </properties>
     <dependencies>
         <dependency>
